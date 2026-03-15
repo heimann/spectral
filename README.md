@@ -32,14 +32,14 @@ $ spectral run specs/auth.yml
 Paste this into a chat with your AI agent:
 
 ```
-Read https://raw.githubusercontent.com/exedev/spectral/main/prompt.md and follow the instructions.
+Read https://raw.githubusercontent.com/heimann/spectral/main/prompt.md and follow the instructions.
 ```
 
 ## Manual install
 
 ```
 npm install -g agent-browser && agent-browser install
-git clone https://github.com/exedev/spectral.git
+git clone https://github.com/heimann/spectral.git
 cd spectral && bun install
 ```
 

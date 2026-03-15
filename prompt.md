@@ -21,7 +21,7 @@ agent-browser install
 
 Then clone and install spectral:
 ```
-git clone https://github.com/exedev/spectral.git /tmp/spectral
+git clone https://github.com/heimann/spectral.git /tmp/spectral
 cd /tmp/spectral && bun install
 ```
 
@@ -70,7 +70,7 @@ If they say yes, add a CI step. For GitHub Actions:
 - name: Install spectral
   run: |
     npm install -g agent-browser && agent-browser install
-    git clone https://github.com/exedev/spectral.git /tmp/spectral
+    git clone https://github.com/heimann/spectral.git /tmp/spectral
     cd /tmp/spectral && bun install
 
 - name: Run e2e specs
