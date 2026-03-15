@@ -1,0 +1,6 @@
+suite: Example.com
+target: https://example.com
+
+assertions:
+  - Page displays a heading that says "Example Domain"
+  - Page contains a link to more information

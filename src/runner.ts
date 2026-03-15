@@ -82,11 +82,20 @@ Be strict: the assertion must clearly be true based on what you observe. If ambi
       },
     });
 
+const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Assertion timed out (30s)")), 30000);
+    });
+
     await agent.prompt(
       `Target URL: ${spec.target}\n\nAssertion: "${assertion.text}"${withContext}\n\nEvaluate this assertion now.`
     );
 
-    const verdict = await verdictPromise;
+    let verdict: { status: string; reasoning: string };
+    try {
+      verdict = await Promise.race([verdictPromise, timeoutPromise]);
+    } catch {
+      verdict = { status: "failed", reasoning: "Agent did not call report_verdict" };
+    }
     const durationMs = Date.now() - start;
 
     results.push({
