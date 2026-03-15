@@ -1,0 +1,6 @@
+suite: Authentication
+target: http://localhost:4000/login
+
+assertions:
+  - Login page renders email and password fields
+  - Page has a heading or title related to login
