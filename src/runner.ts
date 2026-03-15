@@ -8,17 +8,25 @@ export interface AssertionResult {
   status: "passed" | "failed";
   reasoning: string;
   durationMs: number;
+  costUsd: number;
 }
 
 export interface SuiteResult {
   suite: string;
   target: string;
   assertions: AssertionResult[];
+  costUsd: number;
 }
 
-export async function runSpec(spec: Spec): Promise<SuiteResult> {
+export interface RunOptions {
+  onAssertionStart?: (assertion: Assertion, index: number, total: number) => void;
+  onAssertionEnd?: (result: AssertionResult, index: number, total: number) => void;
+  onToolCall?: (toolName: string, args: any) => void;
+}
+
+export async function runSpec(spec: Spec, opts?: RunOptions): Promise<SuiteResult> {
   const results: AssertionResult[] = [];
-  const model = (getModel as Function)("anthropic", "claude-sonnet-4-20250514");
+  const model = (getModel as Function)("anthropic", "claude-haiku-4-5-20251001");
 
   // Declare the verdict tool that the agent calls to report pass/fail
   const verdictRef: { resolve?: (v: any) => void } = {};
@@ -52,7 +60,9 @@ export async function runSpec(spec: Spec): Promise<SuiteResult> {
     },
   };
 
-  for (const assertion of spec.assertions) {
+  for (let i = 0; i < spec.assertions.length; i++) {
+    const assertion = spec.assertions[i];
+    opts?.onAssertionStart?.(assertion, i, spec.assertions.length);
     const start = Date.now();
 
     const verdictPromise = new Promise<{ status: string; reasoning: string }>(
@@ -82,7 +92,17 @@ Be strict: the assertion must clearly be true based on what you observe. If ambi
       },
     });
 
-const timeoutPromise = new Promise<never>((_, reject) => {
+    let assertionCost = 0;
+    agent.subscribe((e) => {
+      if (e.type === "tool_execution_start") {
+        opts?.onToolCall?.(e.toolName, e.args);
+      }
+      if (e.type === "message_end" && e.message && "usage" in e.message) {
+        assertionCost += (e.message as any).usage?.cost?.total ?? 0;
+      }
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error("Assertion timed out (30s)")), 30000);
     });
 
@@ -98,12 +118,15 @@ const timeoutPromise = new Promise<never>((_, reject) => {
     }
     const durationMs = Date.now() - start;
 
-    results.push({
+    const result: AssertionResult = {
       text: assertion.text,
       status: verdict.status as "passed" | "failed",
       reasoning: verdict.reasoning,
       durationMs,
-    });
+      costUsd: assertionCost,
+    };
+    results.push(result);
+    opts?.onAssertionEnd?.(result, i, spec.assertions.length);
   }
 
   // Close browser after suite
@@ -116,5 +139,6 @@ const timeoutPromise = new Promise<never>((_, reject) => {
     suite: spec.suite,
     target: spec.target,
     assertions: results,
+    costUsd: results.reduce((sum, r) => sum + r.costUsd, 0),
   };
 }
